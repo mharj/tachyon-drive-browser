@@ -1,0 +1,133 @@
+import type {ILoggerLike} from '@avanio/logger-like';
+import {IPersistSerializer, IStoreProcessor, StorageDriver} from 'tachyon-drive';
+import type {Loadable} from '../types/loadable';
+
+export type CacheStorageDriverOptions = {
+	/** Cache Store name, defaults as 'tachyon' */
+	cacheName?: string;
+	/** Cache Request url */
+	url: URL;
+};
+/**
+ * CacheStorageDriver
+ * @example
+ * const stringSerializer: IPersistSerializer<DemoData, string> = { ... };
+ * export const cacheStoreDriver = new CacheStorageDriver('CacheStorageDriver', {url: new URL('http://tachyon')}, stringSerializer);
+ */
+export class CacheStorageDriver<Input, Output extends ArrayBuffer | string> extends StorageDriver<Input, Output> {
+	private options: Loadable<CacheStorageDriverOptions>;
+	private caches: CacheStorage;
+	private currentCache: Cache | undefined;
+	private currentRequest: Request | undefined;
+	/**
+	 * CacheStorageDriver constructor
+	 * @param {string} name Driver name
+	 * @param {Loadable<CacheStorageDriverOptions>} options CacheStorageDriver options which can be a value, promise or a function
+	 * @param {IPersistSerializer<Input, Output>} serializer Serializer object for the data, this can be string or ArrayBuffer serializer
+	 * @param {IStoreProcessor<Output>} processor optional Processor which can be used to modify the data before storing or after hydrating
+	 * @param {ILoggerLike} logger optional logger
+	 * @param {CacheStorage} caches override the caches storage instance (for testing)
+	 */
+	constructor(
+		name: string,
+		options: Loadable<CacheStorageDriverOptions>,
+		serializer: IPersistSerializer<Input, Output>,
+		processor?: IStoreProcessor<Output>,
+		logger?: ILoggerLike,
+		caches?: CacheStorage,
+	) {
+		super(name, serializer, null, processor, logger);
+		// istanbul ignore next
+		if (!caches && typeof window !== 'undefined') {
+			caches = window.caches;
+		}
+		if (!caches) {
+			throw new Error('Cache storage not supported');
+		}
+		this.options = options;
+		this.caches = caches;
+	}
+
+	protected async handleInit(): Promise<boolean> {
+		await this.getCurrentCache();
+		return true;
+	}
+
+	protected async handleStore(buffer: Output): Promise<void> {
+		let size: number;
+		let res: Response;
+		let contentType: string;
+		if (typeof buffer === 'string') {
+			size = buffer.length;
+			contentType = 'text/plain';
+			res = new Response(buffer, {headers: {'Content-Type': contentType, 'Content-Length': size.toString()}});
+		} else {
+			size = buffer.byteLength;
+			contentType = 'application/octet-stream';
+			res = new Response(buffer, {headers: {'Content-Type': contentType, 'Content-Length': size.toString()}});
+		}
+		const cache = await this.getCurrentCache();
+		await cache.put(await this.getRequest(), res);
+		this.logger?.debug(`CacheStorageDriver: Stored ${size} bytes as '${contentType}'`);
+	}
+
+	protected async handleHydrate(): Promise<Output | undefined> {
+		const cache = await this.getCurrentCache();
+		const res = await cache.match(await this.getRequest());
+		if (res) {
+			const contentType = res.headers.get('Content-Type');
+			let data: Output;
+			switch (contentType) {
+				case 'application/octet-stream': {
+					data = (await res.clone().arrayBuffer()) as Output;
+					break;
+				}
+				case 'text/plain': {
+					data = (await res.clone().text()) as Output;
+					break;
+				}
+				// istanbul ignore next
+				default:
+					throw new Error('Content-Type header missing or wrong');
+			}
+			const size = typeof data === 'string' ? data.length : data.byteLength;
+			this.logger?.debug(`CacheStorageDriver: Read ${size} bytes as '${contentType}'`);
+			return data;
+		}
+		return undefined;
+	}
+
+	protected async handleClear(): Promise<void> {
+		const cache = await this.getCurrentCache();
+		cache.delete(await this.getRequest());
+	}
+
+	protected handleUnload(): Promise<boolean> {
+		this.currentCache = undefined;
+		this.currentRequest = undefined;
+		return Promise.resolve(true);
+	}
+
+	private async getRequest(): Promise<Request> {
+		if (!this.currentRequest) {
+			const options = await this.getOptions();
+			this.currentRequest = new Request(options.url);
+			this.logger?.debug(`CacheStorageDriver: Created request for '${options.url}'`);
+		}
+		return this.currentRequest;
+	}
+
+	private async getCurrentCache(): Promise<Cache> {
+		if (!this.currentCache) {
+			const options = await this.getOptions();
+			const cacheName = options.cacheName || 'tachyon';
+			this.currentCache = await this.caches.open(cacheName);
+			this.logger?.debug(`CacheStorageDriver: Opened cache '${cacheName}'`);
+		}
+		return this.currentCache;
+	}
+
+	private getOptions(): Promise<CacheStorageDriverOptions> | CacheStorageDriverOptions {
+		return this.options instanceof Function ? this.options() : this.options;
+	}
+}

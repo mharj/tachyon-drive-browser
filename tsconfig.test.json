@@ -1,0 +1,22 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "module": "nodenext",
+        "moduleResolution": "node16",
+        "rootDir": "",
+        "rootDirs": [
+            "./src",
+            "./test"
+        ],
+        "outDir": "./unit-test-dist/",
+    },
+    "include": [
+        "test/**/*.ts",
+        "src/**/*.ts"
+    ],
+    "exclude": [
+        "dist/*",
+        "node_modules/*"
+    ],
+    "importHelpers": false
+}
