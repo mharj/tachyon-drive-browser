@@ -11,6 +11,9 @@ dependencies:
   tachyon-drive:
     specifier: ^0.3.4
     version: 0.3.4
+  tslib:
+    specifier: ^2.6.2
+    version: 2.6.2
 
 devDependencies:
   '@types/chai':
