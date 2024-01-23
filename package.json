@@ -22,7 +22,7 @@
     "files": [
         "dist"
     ],
-    "repository": "github:mharj/tachyon-drive-node-fs",
+    "repository": "github:mharj/tachyon-drive-browser",
     "keywords": [
         "storage",
         "driver",
