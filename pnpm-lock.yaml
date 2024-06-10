@@ -9,8 +9,8 @@ dependencies:
     specifier: ^0.1.1
     version: 0.1.1
   tachyon-drive:
-    specifier: ^0.3.4
-    version: 0.3.4
+    specifier: ^0.8.0
+    version: 0.8.0
   tslib:
     specifier: ^2.6.2
     version: 2.6.2
@@ -628,6 +628,10 @@ packages:
 
   /@luolapeikko/result-option@0.5.3:
     resolution: {integrity: sha512-M+lLIgKbdsGzIEsHX3Jl+W96wveaEkJobo+iuw4vRfkKkkdbt0qfyDBB23eIuLw3hdgH8IMopSIjrE/jukgIMg==}
+    dev: false
+
+  /@luolapeikko/ts-common@0.0.5:
+    resolution: {integrity: sha512-eqytgxJwblDAEvnn1fssNDHQVfcysGU/Z/oE8ufKG6zodc1t7pi0y8iT5iH1jP3j+eXFxjWQQcNl7cI9FYqsPg==}
     dev: false
 
   /@nodelib/fs.scandir@2.1.5:
@@ -3224,6 +3228,14 @@ packages:
       queue-microtask: 1.2.3
     dev: true
 
+  /rxjs@7.8.1:
+    resolution: {integrity: sha512-AA3TVj+0A2iuIoQkWEK/tqFjBq2j+6PO6Y0zJcvzLAFhEFIO3HL0vls9hWLncZbAAbK0mar7oZ4V079I/qPMxg==}
+    requiresBuild: true
+    dependencies:
+      tslib: 2.6.2
+    dev: false
+    optional: true
+
   /safe-array-concat@1.1.0:
     resolution: {integrity: sha512-ZdQ0Jeb9Ofti4hbt5lX3T2JcAamT9hfzYU1MNB+z/jaEbB6wfFfPIR/zEORmZqobkCCJhSjodobH6WHNmJ97dg==}
     engines: {node: '>=0.4'}
@@ -3477,12 +3489,14 @@ packages:
       tslib: 2.6.2
     dev: true
 
-  /tachyon-drive@0.3.4:
-    resolution: {integrity: sha512-+Z5z1z2LOpRGUp1iNNhekODhoNIH0yEZ96qkMUdkiskNqHrIQWdYfyJ8AjV/G6p3xmNP4IkbV7Pq/uN/D3nmBQ==}
+  /tachyon-drive@0.8.0:
+    resolution: {integrity: sha512-WAFDJi7FT1vKY9tUVsrM4fDnq61dVFCkwCEiPG/FDpablXZPQCrIx4SAYG1UzxKGx1nFJjKJ7TMopZAyapjffQ==}
     dependencies:
       '@avanio/logger-like': 0.1.1
       '@luolapeikko/result-option': 0.5.3
+      '@luolapeikko/ts-common': 0.0.5
       tslib: 2.6.2
+      typed-emitter: 2.1.0
     dev: false
 
   /test-exclude@6.0.0:
@@ -3702,6 +3716,12 @@ packages:
       for-each: 0.3.3
       is-typed-array: 1.1.12
     dev: true
+
+  /typed-emitter@2.1.0:
+    resolution: {integrity: sha512-g/KzbYKbH5C2vPkaXGu8DJlHrGKHLsM25Zg9WuC9pMGfuvT+X25tZQWo5fK1BjBm8+UrVE9LDCvaY0CQk+fXDA==}
+    optionalDependencies:
+      rxjs: 7.8.1
+    dev: false
 
   /typedarray-to-buffer@3.1.5:
     resolution: {integrity: sha512-zdu8XMNEDepKKR+XYOXAVPtWui0ly0NtohUscw+UmaHiAWT8hrV1rr//H6V+0DvJ3OQ19S979M0laLfX8rm82Q==}
