@@ -1,6 +1,6 @@
 import type {ILoggerLike} from '@avanio/logger-like';
-import {StorageDriver, IStoreProcessor, IPersistSerializer} from 'tachyon-drive';
-import type {Loadable} from '../types/loadable';
+import {StorageDriver, type IStoreProcessor, type IPersistSerializer, TachyonBandwidth} from 'tachyon-drive';
+import type {Loadable} from '@luolapeikko/ts-common';
 
 /**
  * LocalStorageDriver
@@ -9,6 +9,7 @@ import type {Loadable} from '../types/loadable';
  * export const localStoreDriver = new LocalStorageDriver('LocalStorageDriver', 'tachyon', stringSerializer, undefined, console);
  */
 export class LocalStorageDriver<Input, Output extends string = string> extends StorageDriver<Input, Output> {
+	public readonly bandwidth = TachyonBandwidth.Large;
 	private keyName: Loadable<string>;
 	private localStorage: Storage;
 	private currentKey: string | undefined;
@@ -47,13 +48,13 @@ export class LocalStorageDriver<Input, Output extends string = string> extends S
 
 	protected async handleStore(buffer: string): Promise<void> {
 		this.localStorage.setItem(await this.getKey(), buffer);
-		this.logger?.debug(`LocalStorageDriver: Stored ${buffer.length} bytes`);
+		this.logger.debug(`LocalStorageDriver: Stored ${buffer.length.toString()} bytes`);
 	}
 
 	protected async handleHydrate(): Promise<Output | undefined> {
 		const data = this.localStorage.getItem(await this.getKey()) as Output | null;
 		if (data) {
-			this.logger?.debug(`LocalStorageDriver: Read ${data.length} bytes`);
+			this.logger.debug(`LocalStorageDriver: Read ${data.length.toString()} bytes`);
 		}
 		return data || undefined;
 	}
@@ -69,7 +70,7 @@ export class LocalStorageDriver<Input, Output extends string = string> extends S
 	private async getKey(): Promise<string> {
 		if (!this.currentKey) {
 			this.currentKey = await (this.keyName instanceof Function ? this.keyName() : this.keyName);
-			this.logger?.debug(`LocalStorageDriver: Using key '${this.currentKey}'`);
+			this.logger.debug(`LocalStorageDriver: Using key '${this.currentKey}'`);
 		}
 		return this.currentKey;
 	}

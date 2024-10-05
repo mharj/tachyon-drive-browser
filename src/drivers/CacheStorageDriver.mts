@@ -1,6 +1,6 @@
 import type {ILoggerLike} from '@avanio/logger-like';
-import {IPersistSerializer, IStoreProcessor, StorageDriver} from 'tachyon-drive';
-import type {Loadable} from '../types/loadable';
+import {type IPersistSerializer, type IStoreProcessor, StorageDriver, TachyonBandwidth} from 'tachyon-drive';
+import type {Loadable} from '@luolapeikko/ts-common';
 
 export type CacheStorageDriverOptions = {
 	/** Cache Store name, defaults as 'tachyon' */
@@ -15,6 +15,7 @@ export type CacheStorageDriverOptions = {
  * export const cacheStoreDriver = new CacheStorageDriver('CacheStorageDriver', {url: new URL('http://tachyon')}, stringSerializer);
  */
 export class CacheStorageDriver<Input, Output extends ArrayBuffer | string> extends StorageDriver<Input, Output> {
+	public readonly bandwidth = TachyonBandwidth.Large;
 	private options: Loadable<CacheStorageDriverOptions>;
 	private caches: CacheStorage;
 	private currentCache: Cache | undefined;
@@ -68,7 +69,7 @@ export class CacheStorageDriver<Input, Output extends ArrayBuffer | string> exte
 		}
 		const cache = await this.getCurrentCache();
 		await cache.put(await this.getRequest(), res);
-		this.logger?.debug(`CacheStorageDriver: Stored ${size} bytes as '${contentType}'`);
+		this.logger.debug(`CacheStorageDriver: Stored ${size.toString()} bytes as '${contentType}'`);
 	}
 
 	protected async handleHydrate(): Promise<Output | undefined> {
@@ -91,7 +92,7 @@ export class CacheStorageDriver<Input, Output extends ArrayBuffer | string> exte
 					throw new Error('Content-Type header missing or wrong');
 			}
 			const size = typeof data === 'string' ? data.length : data.byteLength;
-			this.logger?.debug(`CacheStorageDriver: Read ${size} bytes as '${contentType}'`);
+			this.logger.debug(`CacheStorageDriver: Read ${size.toString()} bytes as '${contentType}'`);
 			return data;
 		}
 		return undefined;
@@ -99,7 +100,7 @@ export class CacheStorageDriver<Input, Output extends ArrayBuffer | string> exte
 
 	protected async handleClear(): Promise<void> {
 		const cache = await this.getCurrentCache();
-		cache.delete(await this.getRequest());
+		await cache.delete(await this.getRequest());
 	}
 
 	protected handleUnload(): Promise<boolean> {
@@ -112,7 +113,7 @@ export class CacheStorageDriver<Input, Output extends ArrayBuffer | string> exte
 		if (!this.currentRequest) {
 			const options = await this.getOptions();
 			this.currentRequest = new Request(options.url);
-			this.logger?.debug(`CacheStorageDriver: Created request for '${options.url}'`);
+			this.logger.debug(`CacheStorageDriver: Created request for '${options.url}'`);
 		}
 		return this.currentRequest;
 	}
@@ -122,7 +123,7 @@ export class CacheStorageDriver<Input, Output extends ArrayBuffer | string> exte
 			const options = await this.getOptions();
 			const cacheName = options.cacheName || 'tachyon';
 			this.currentCache = await this.caches.open(cacheName);
-			this.logger?.debug(`CacheStorageDriver: Opened cache '${cacheName}'`);
+			this.logger.debug(`CacheStorageDriver: Opened cache '${cacheName}'`);
 		}
 		return this.currentCache;
 	}

@@ -2,3 +2,4 @@ dist
 node_modules
 # Ignore all HTML files:
 *.html
+vite.config.mts

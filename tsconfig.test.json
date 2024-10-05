@@ -11,8 +11,8 @@
         "outDir": "./unit-test-dist/",
     },
     "include": [
-        "test/**/*.ts",
-        "src/**/*.ts"
+        "test/",
+        "src/"
     ],
     "exclude": [
         "dist/*",

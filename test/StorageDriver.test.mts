@@ -1,15 +1,10 @@
 /* eslint-disable sonarjs/no-duplicate-string */
-import * as chai from 'chai';
-import 'mocha';
 import {z} from 'zod';
-import * as chaiAsPromised from 'chai-as-promised';
-import {IPersistSerializer, IStorageDriver} from 'tachyon-drive';
-import {LocalStorageDriver, CacheStorageDriver} from '../src/';
-import {mockStorage} from './lib/MockStorage';
-import {MockupCacheStore} from './lib/mockupCache';
-
-chai.use(chaiAsPromised);
-const expect = chai.expect;
+import {beforeAll, describe, expect, it} from 'vitest';
+import {type IPersistSerializer, type IStorageDriver} from 'tachyon-drive';
+import {LocalStorageDriver, CacheStorageDriver} from '../src/index.mjs';
+import {MockStorage} from './lib/MockStorage.mjs';
+import {MockupCacheStore} from './lib/mockupCache.mjs';
 
 const dataSchema = z.object({
 	test: z.string(),
@@ -18,23 +13,27 @@ const dataSchema = z.object({
 type Data = z.infer<typeof dataSchema>;
 
 const stringSerializer: IPersistSerializer<Data, string> = {
+	name: 'stringSerializer',
 	serialize: (data: Data) => JSON.stringify(data),
-	deserialize: (buffer: string) => JSON.parse(buffer),
+	deserialize: (buffer: string) => JSON.parse(buffer) as Data,
 	validator: (data: Data) => dataSchema.safeParse(data).success,
 };
 
 const arrayBufferSerializer: IPersistSerializer<Data, ArrayBuffer> = {
+	name: 'arrayBufferSerializer',
 	serialize: (data: Data) => new TextEncoder().encode(JSON.stringify(data)),
-	deserialize: (buffer: ArrayBuffer) => JSON.parse(new TextDecoder().decode(buffer)),
+	deserialize: (buffer: ArrayBuffer) => JSON.parse(new TextDecoder().decode(buffer)) as Data,
 	validator: (data: Data) => dataSchema.safeParse(data).success,
 };
 
+const mockStorage = new MockStorage();
+
 const driverSet = new Set<IStorageDriver<Data>>([
-	new LocalStorageDriver('LocalStorageDriver1', async () => 'storageKey', stringSerializer, undefined, undefined, mockStorage),
+	new LocalStorageDriver('LocalStorageDriver1', () => Promise.resolve('storageKey'), stringSerializer, undefined, undefined, mockStorage),
 	new LocalStorageDriver('LocalStorageDriver2', 'storageKey', stringSerializer, undefined, undefined, mockStorage),
 	new CacheStorageDriver(
 		'CacheStorageDriver1',
-		async () => ({url: new URL('https://example.com/data')}),
+		() => Promise.resolve({url: new URL('https://example.com/data')}),
 		arrayBufferSerializer,
 		undefined,
 		undefined,
@@ -48,8 +47,7 @@ const data = dataSchema.parse({test: 'demo'});
 describe('StorageDriver', () => {
 	driverSet.forEach((currentDriver) => {
 		describe(currentDriver.name, () => {
-			before(async function () {
-				this.timeout(10000);
+			beforeAll(async function () {
 				await currentDriver.init();
 				await currentDriver.clear();
 				expect(currentDriver.isInitialized).to.be.eq(false);
@@ -81,15 +79,15 @@ describe('StorageDriver', () => {
 		});
 	});
 	describe('Errors', () => {
-		it('should throw error on constructor', async () => {
-			expect(() => new LocalStorageDriver('LocalStorageDriver', async () => 'storageKey', stringSerializer, undefined, undefined, undefined)).to.throw(
-				'Local storage not supported',
-			);
+		it('should throw error on constructor', function () {
+			expect(
+				() => new LocalStorageDriver('LocalStorageDriver', () => Promise.resolve('storageKey'), stringSerializer, undefined, undefined, undefined),
+			).to.throw('Local storage not supported');
 			expect(
 				() =>
 					new CacheStorageDriver(
 						'CacheStorageDriver',
-						async () => ({url: new URL('https://example.com/data')}),
+						() => Promise.resolve({url: new URL('https://example.com/data')}),
 						arrayBufferSerializer,
 						undefined,
 						undefined,
