@@ -56,19 +56,25 @@ export class CacheStorageDriver<Input, Output extends ArrayBuffer | string> exte
 
 	protected async handleStore(buffer: Output): Promise<void> {
 		let size: number;
-		let res: Response;
 		let contentType: string;
 		if (typeof buffer === 'string') {
 			size = buffer.length;
 			contentType = 'text/plain';
-			res = new Response(buffer, {headers: {'Content-Type': contentType, 'Content-Length': size.toString()}});
 		} else {
 			size = buffer.byteLength;
 			contentType = 'application/octet-stream';
-			res = new Response(buffer, {headers: {'Content-Type': contentType, 'Content-Length': size.toString()}});
 		}
 		const cache = await this.getCurrentCache();
-		await cache.put(await this.getRequest(), res);
+		const request = await this.getRequest();
+		await cache.put(
+			request,
+			new Response(buffer, {
+				headers: {
+					'Content-Type': contentType,
+					'Content-Length': size.toString(),
+				},
+			}),
+		);
 		this.logger.debug(`CacheStorageDriver: Stored ${size.toString()} bytes as '${contentType}'`);
 	}
 

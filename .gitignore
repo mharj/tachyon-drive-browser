@@ -67,3 +67,5 @@ unit-test-dist
 # unit testing
 test-results.xml
 reports
+test/__screenshots__
+test-results

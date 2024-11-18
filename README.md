@@ -2,6 +2,10 @@
 
 ## Browser CacheStorage and LocalStorage driver for [tachyon-drive](https://www.npmjs.com/package/tachyon-drive)
 
+### Compatibility
+ - Uses `CacheStorage` and `LocalStorage` Browser APIs.
+ - Have peer dependencies on Browserify `events` packages (for StorageDriver `EventEmitter`).
+
 ### CacheStorageDriver and LocalStorageDriver examples
 
 ```typescript

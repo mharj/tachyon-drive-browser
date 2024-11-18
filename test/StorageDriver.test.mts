@@ -12,6 +12,16 @@ const dataSchema = z.object({
 
 type Data = z.infer<typeof dataSchema>;
 
+const isBrowser = typeof window !== 'undefined';
+
+function getStorage(): Storage {
+	return isBrowser ? window.localStorage : new MockStorage();
+}
+
+function getCacheStorage(): CacheStorage {
+	return isBrowser ? window.caches : new MockupCacheStore();
+}
+
 const stringSerializer: IPersistSerializer<Data, string> = {
 	name: 'stringSerializer',
 	serialize: (data: Data) => JSON.stringify(data),
@@ -26,20 +36,18 @@ const arrayBufferSerializer: IPersistSerializer<Data, ArrayBuffer> = {
 	validator: (data: Data) => dataSchema.safeParse(data).success,
 };
 
-const mockStorage = new MockStorage();
-
 const driverSet = new Set<IStorageDriver<Data>>([
-	new LocalStorageDriver('LocalStorageDriver1', () => Promise.resolve('storageKey'), stringSerializer, undefined, undefined, mockStorage),
-	new LocalStorageDriver('LocalStorageDriver2', 'storageKey', stringSerializer, undefined, undefined, mockStorage),
+	new LocalStorageDriver('LocalStorageDriver1', () => Promise.resolve('storageKey'), stringSerializer, undefined, undefined, getStorage()),
+	new LocalStorageDriver('LocalStorageDriver2', 'storageKey', stringSerializer, undefined, undefined, getStorage()),
 	new CacheStorageDriver(
 		'CacheStorageDriver1',
 		() => Promise.resolve({url: new URL('https://example.com/data')}),
 		arrayBufferSerializer,
 		undefined,
 		undefined,
-		new MockupCacheStore(),
+		getCacheStorage(),
 	),
-	new CacheStorageDriver('CacheStorageDriver2', {url: new URL('https://example.com/data')}, stringSerializer, undefined, undefined, new MockupCacheStore()),
+	new CacheStorageDriver('CacheStorageDriver2', {url: new URL('https://example.com/data')}, stringSerializer, undefined, undefined, getCacheStorage()),
 ]);
 
 const data = dataSchema.parse({test: 'demo'});
@@ -78,7 +86,7 @@ describe('StorageDriver', () => {
 			});
 		});
 	});
-	describe('Errors', () => {
+	describe('Errors', {skip: isBrowser}, () => {
 		it('should throw error on constructor', function () {
 			expect(
 				() => new LocalStorageDriver('LocalStorageDriver', () => Promise.resolve('storageKey'), stringSerializer, undefined, undefined, undefined),
