@@ -31,10 +31,6 @@ jobs:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Install playwright browsers
-        run: |
-          npx playwright install chromium --with-deps
-
       - name: Read package information
         run: |
           echo "PACKAGE_NAME=$(cat package.json | jq -r .name)" >> $GITHUB_ENV
@@ -50,6 +46,10 @@ jobs:
 
       - name: Install dependencies
         run: ${{ env.NPM }} install
+
+      - name: Install playwright browsers
+        run: |
+          npx playwright install chromium --with-deps
 
       - name: Run validate
         if: env.HAVE_VALIDATE_SCRIPT == 'true'

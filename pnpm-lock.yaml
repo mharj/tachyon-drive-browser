@@ -9,7 +9,7 @@ importers:
   .:
     dependencies:
       events:
-        specifier: ^3.3.0
+        specifier: ^3.3
         version: 3.3.0
     devDependencies:
       '@avanio/logger-like':
