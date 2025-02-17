@@ -1,8 +1,7 @@
-/* eslint-disable sonarjs/no-duplicate-string */
-import {z} from 'zod';
-import {beforeAll, describe, expect, it} from 'vitest';
 import {type IPersistSerializer, type IStorageDriver} from 'tachyon-drive';
-import {LocalStorageDriver, CacheStorageDriver} from '../src/index.mjs';
+import {beforeAll, describe, expect, it} from 'vitest';
+import {z} from 'zod';
+import {CacheStorageDriver, LocalStorageDriver} from '../src/index.mjs';
 import {MockStorage} from './lib/MockStorage.mjs';
 import {MockupCacheStore} from './lib/mockupCache.mjs';
 

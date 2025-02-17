@@ -1,6 +1,6 @@
 import type {ILoggerLike} from '@avanio/logger-like';
-import {StorageDriver, type IStoreProcessor, type IPersistSerializer, TachyonBandwidth} from 'tachyon-drive';
 import type {Loadable} from '@luolapeikko/ts-common';
+import {type IPersistSerializer, type IStoreProcessor, StorageDriver, TachyonBandwidth} from 'tachyon-drive';
 
 /**
  * LocalStorageDriver
@@ -40,21 +40,25 @@ export class LocalStorageDriver<Input, Output extends string = string> extends S
 		}
 		this.keyName = keyName;
 		this.localStorage = localStorage;
+		this.onStorageEvent = this.onStorageEvent.bind(this);
 	}
 
-	protected handleInit(): Promise<boolean> {
-		return Promise.resolve(true);
+	protected async handleInit(): Promise<boolean> {
+		await this.getKey(); // resolve key name to variable
+		this.logger.debug(`${this.name}: Register storage event listener for key '${String(this.currentKey)}'`);
+		window.addEventListener('storage', this.onStorageEvent);
+		return true;
 	}
 
 	protected async handleStore(buffer: string): Promise<void> {
 		this.localStorage.setItem(await this.getKey(), buffer);
-		this.logger.debug(`LocalStorageDriver: Stored ${buffer.length.toString()} bytes`);
+		this.logger.debug(`${this.name}: Stored ${buffer.length.toString()} bytes to LocalStorage`);
 	}
 
 	protected async handleHydrate(): Promise<Output | undefined> {
 		const data = this.localStorage.getItem(await this.getKey()) as Output | null;
 		if (data) {
-			this.logger.debug(`LocalStorageDriver: Read ${data.length.toString()} bytes`);
+			this.logger.debug(`${this.name}: Read ${data.length.toString()} bytes from LocalStorage`);
 		}
 		return data || undefined;
 	}
@@ -63,15 +67,30 @@ export class LocalStorageDriver<Input, Output extends string = string> extends S
 		this.localStorage.removeItem(await this.getKey());
 	}
 
-	protected handleUnload(): Promise<boolean> {
-		return Promise.resolve(true);
+	protected async handleUnload(): Promise<boolean> {
+		this.logger.debug(`${this.name}: Unregister storage event listener for key '${await this.getKey()}'`);
+		window.removeEventListener('storage', this.onStorageEvent);
+		return true;
 	}
 
 	private async getKey(): Promise<string> {
 		if (!this.currentKey) {
-			this.currentKey = await (this.keyName instanceof Function ? this.keyName() : this.keyName);
-			this.logger.debug(`LocalStorageDriver: Using key '${this.currentKey}'`);
+			if (this.keyName instanceof Function) {
+				this.keyName = this.keyName();
+			}
+			this.currentKey = await this.keyName;
+			this.logger.debug(`${this.name}: Using key '${this.currentKey}'`);
 		}
 		return this.currentKey;
+	}
+
+	private onStorageEvent(event: StorageEvent) {
+		if (!this.currentKey) {
+			throw new Error('keyName was not resolved yet');
+		}
+		if (event.key === this.currentKey) {
+			this.logger.debug(`${this.name}: Storage event for key '${event.key}'`);
+			void this.handleUpdate().catch((err: unknown) => this.logger.error(err));
+		}
 	}
 }

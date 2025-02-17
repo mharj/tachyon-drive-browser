@@ -7,22 +7,6 @@ export class MockupCache implements Cache {
 		return Promise.resolve();
 	}
 
-	private handleAdd(req: Request, res?: Response) {
-		const keyList = this.buildRequestKeyList(req);
-		keyList.forEach((key) => this.cache.set(key, {req, res}));
-	}
-
-	private handleDelete(req: Request, _options: CacheQueryOptions): boolean {
-		let isDeleted = false;
-		const keyList = this.buildRequestKeyList(req);
-		keyList.forEach((key) => {
-			if (this.cache.delete(key)) {
-				isDeleted = true;
-			}
-		});
-		return isDeleted;
-	}
-
 	public addAll(requests: Iterable<RequestInfo>): Promise<void> {
 		for (const request of requests) {
 			const req = this.buildRequest(request);
@@ -109,6 +93,22 @@ export class MockupCache implements Cache {
 			}
 		}
 		return keys;
+	}
+
+	private handleAdd(req: Request, res?: Response) {
+		const keyList = this.buildRequestKeyList(req);
+		keyList.forEach((key) => this.cache.set(key, {req, res}));
+	}
+
+	private handleDelete(req: Request, _options: CacheQueryOptions): boolean {
+		let isDeleted = false;
+		const keyList = this.buildRequestKeyList(req);
+		keyList.forEach((key) => {
+			if (this.cache.delete(key)) {
+				isDeleted = true;
+			}
+		});
+		return isDeleted;
 	}
 }
 

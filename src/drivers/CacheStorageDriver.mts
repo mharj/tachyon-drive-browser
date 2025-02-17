@@ -1,6 +1,6 @@
 import type {ILoggerLike} from '@avanio/logger-like';
-import {type IPersistSerializer, type IStoreProcessor, StorageDriver, TachyonBandwidth} from 'tachyon-drive';
 import type {Loadable} from '@luolapeikko/ts-common';
+import {type IPersistSerializer, type IStoreProcessor, StorageDriver, TachyonBandwidth} from 'tachyon-drive';
 
 export type CacheStorageDriverOptions = {
 	/** Cache Store name, defaults as 'tachyon' */
@@ -75,7 +75,7 @@ export class CacheStorageDriver<Input, Output extends ArrayBuffer | string> exte
 				},
 			}),
 		);
-		this.logger.debug(`CacheStorageDriver: Stored ${size.toString()} bytes as '${contentType}'`);
+		this.logger.debug(`${this.name}: Stored ${size.toString()} bytes as '${contentType}'`);
 	}
 
 	protected async handleHydrate(): Promise<Output | undefined> {
@@ -98,7 +98,7 @@ export class CacheStorageDriver<Input, Output extends ArrayBuffer | string> exte
 					throw new Error('Content-Type header missing or wrong');
 			}
 			const size = typeof data === 'string' ? data.length : data.byteLength;
-			this.logger.debug(`CacheStorageDriver: Read ${size.toString()} bytes as '${contentType}'`);
+			this.logger.debug(`${this.name}: Read ${size.toString()} bytes as '${contentType}'`);
 			return data;
 		}
 		return undefined;
@@ -119,7 +119,7 @@ export class CacheStorageDriver<Input, Output extends ArrayBuffer | string> exte
 		if (!this.currentRequest) {
 			const options = await this.getOptions();
 			this.currentRequest = new Request(options.url);
-			this.logger.debug(`CacheStorageDriver: Created request for '${options.url}'`);
+			this.logger.debug(`${this.name}: Created request for '${options.url}'`);
 		}
 		return this.currentRequest;
 	}
@@ -129,7 +129,7 @@ export class CacheStorageDriver<Input, Output extends ArrayBuffer | string> exte
 			const options = await this.getOptions();
 			const cacheName = options.cacheName || 'tachyon';
 			this.currentCache = await this.caches.open(cacheName);
-			this.logger.debug(`CacheStorageDriver: Opened cache '${cacheName}'`);
+			this.logger.debug(`${this.name}: Opened cache '${cacheName}'`);
 		}
 		return this.currentCache;
 	}
