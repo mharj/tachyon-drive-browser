@@ -1,7 +1,7 @@
 import {type IPersistSerializer, type IStorageDriver} from 'tachyon-drive';
 import {beforeAll, describe, expect, it} from 'vitest';
 import {z} from 'zod';
-import {CacheStorageDriver, LocalStorageDriver} from '../src/index.mjs';
+import {CacheStorageDriver, LocalStorageDriver, WebFsStorageDriver} from '../src/index.mjs';
 import {MockStorage} from './lib/MockStorage.mjs';
 import {MockupCacheStore} from './lib/mockupCache.mjs';
 
@@ -35,6 +35,9 @@ const arrayBufferSerializer: IPersistSerializer<Data, ArrayBuffer> = {
 	validator: (data: Data) => dataSchema.safeParse(data).success,
 };
 
+let fsDir: FileSystemDirectoryHandle;
+let fsStoreHandle: FileSystemFileHandle;
+
 const driverSet = new Set<IStorageDriver<Data>>([
 	new LocalStorageDriver('LocalStorageDriver1', () => Promise.resolve('storageKey'), stringSerializer, undefined, undefined, getStorage()),
 	new LocalStorageDriver('LocalStorageDriver2', 'storageKey', stringSerializer, undefined, undefined, getStorage()),
@@ -47,11 +50,17 @@ const driverSet = new Set<IStorageDriver<Data>>([
 		getCacheStorage(),
 	),
 	new CacheStorageDriver('CacheStorageDriver2', {url: new URL('https://example.com/data')}, stringSerializer, undefined, undefined, getCacheStorage()),
+	new WebFsStorageDriver('WebFsStorageDriver', () => fsStoreHandle, arrayBufferSerializer),
 ]);
 
 const data = dataSchema.parse({test: 'demo'});
 
 describe('StorageDriver', () => {
+	beforeAll(async () => {
+		fsDir = await navigator.storage.getDirectory();
+		fsStoreHandle = await fsDir.getFileHandle('store.data', {create: true});
+		expect(await fsStoreHandle.queryPermission({mode: 'readwrite'})).to.be.eq('granted');
+	});
 	driverSet.forEach((currentDriver) => {
 		describe(currentDriver.name, () => {
 			beforeAll(async function () {

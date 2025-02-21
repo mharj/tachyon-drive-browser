@@ -13,6 +13,7 @@ export type CacheStorageDriverOptions = {
  * @example
  * const stringSerializer: IPersistSerializer<DemoData, string> = { ... };
  * export const cacheStoreDriver = new CacheStorageDriver('CacheStorageDriver', {url: new URL('http://tachyon')}, stringSerializer);
+ * @since v0.3.0
  */
 export class CacheStorageDriver<Input, Output extends ArrayBuffer | string> extends StorageDriver<Input, Output> {
 	public readonly bandwidth = TachyonBandwidth.Large;
@@ -38,7 +39,7 @@ export class CacheStorageDriver<Input, Output extends ArrayBuffer | string> exte
 		caches?: CacheStorage,
 	) {
 		super(name, serializer, null, processor, logger);
-		// istanbul ignore next
+		/* c8 ignore next 6 */
 		if (!caches && typeof window !== 'undefined') {
 			caches = window.caches;
 		}
@@ -93,7 +94,7 @@ export class CacheStorageDriver<Input, Output extends ArrayBuffer | string> exte
 					data = (await res.clone().text()) as Output;
 					break;
 				}
-				// istanbul ignore next
+				/* c8 ignore next 2 */
 				default:
 					throw new Error('Content-Type header missing or wrong');
 			}

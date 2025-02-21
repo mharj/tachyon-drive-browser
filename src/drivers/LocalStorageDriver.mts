@@ -7,6 +7,7 @@ import {type IPersistSerializer, type IStoreProcessor, StorageDriver, TachyonBan
  * @example
  * const stringSerializer: IPersistSerializer<DemoData, string> = { ... };
  * export const localStoreDriver = new LocalStorageDriver('LocalStorageDriver', 'tachyon', stringSerializer, undefined, console);
+ * @since v0.3.0
  */
 export class LocalStorageDriver<Input, Output extends string = string> extends StorageDriver<Input, Output> {
 	public readonly bandwidth = TachyonBandwidth.Large;
@@ -31,7 +32,7 @@ export class LocalStorageDriver<Input, Output extends string = string> extends S
 		localStorage?: Storage,
 	) {
 		super(name, serializer, null, processor, logger);
-		// istanbul ignore next
+		/* c8 ignore next 6 */
 		if (!localStorage && typeof window !== 'undefined') {
 			localStorage = window.localStorage;
 		}
@@ -85,6 +86,7 @@ export class LocalStorageDriver<Input, Output extends string = string> extends S
 	}
 
 	private onStorageEvent(event: StorageEvent) {
+		/* c8 ignore next 8 */
 		if (!this.currentKey) {
 			throw new Error('keyName was not resolved yet');
 		}
