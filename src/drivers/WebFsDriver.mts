@@ -12,30 +12,34 @@ import {type IPersistSerializer, type IStoreProcessor, StorageDriver, TachyonBan
  * };
  * export const webFsStoreDriver = new WebFsStorageDriver('WebFsStorageDriver', () => fileSystemFileHandle, arrayBufferSerializer);
  * @see https://developer.mozilla.org/en-US/docs/Web/API/File_System_API
- * @since v0.10.2
+ * @since v0.10.3
  */
 export class WebFsStorageDriver<Input> extends StorageDriver<Input, ArrayBuffer> {
 	public readonly bandwidth = TachyonBandwidth.VeryLarge;
-	private fileHandleLoadable: Loadable<FileSystemFileHandle>;
+	private dirHandleLoadable: Loadable<FileSystemDirectoryHandle>;
+	private fileName: Loadable<string>;
 
 	public constructor(
 		name: string,
-		fileHandle: Loadable<FileSystemFileHandle>,
+		fileName: Loadable<string>,
+		dirHandle: Loadable<FileSystemDirectoryHandle>,
 		serializer: IPersistSerializer<Input, ArrayBuffer>,
-		processor?: IStoreProcessor<ArrayBuffer>,
+		processor?: Loadable<IStoreProcessor<ArrayBuffer>>,
 		logger?: ILoggerLike,
 	) {
 		super(name, serializer, null, processor, logger);
-		this.fileHandleLoadable = fileHandle;
+		this.dirHandleLoadable = dirHandle;
+		this.fileName = fileName;
 	}
 
 	protected async handleInit(): Promise<boolean> {
-		await this.getFileHandler();
+		await this.getDirHandler();
+		await this.getFileName();
 		return true;
 	}
 
 	protected async handleStore(buffer: ArrayBuffer): Promise<void> {
-		const fileHandle = await this.getFileHandler();
+		const fileHandle = await this.getFileHandle(true);
 		this.logger.debug(`${this.name}: Writing file '${fileHandle.name}' size: ${buffer.byteLength.toString()}`);
 		const writable = await fileHandle.createWritable();
 		try {
@@ -47,7 +51,7 @@ export class WebFsStorageDriver<Input> extends StorageDriver<Input, ArrayBuffer>
 
 	protected async handleHydrate(): Promise<ArrayBuffer | undefined> {
 		try {
-			const fileHandle = await this.getFileHandler();
+			const fileHandle = await this.getFileHandle(false);
 			this.logger.debug(`${this.name}: Reading file '${fileHandle.name}'`);
 			const file = await fileHandle.getFile();
 			return await file.arrayBuffer();
@@ -61,10 +65,15 @@ export class WebFsStorageDriver<Input> extends StorageDriver<Input, ArrayBuffer>
 	}
 
 	protected async handleClear(): Promise<void> {
-		const fileHandle = await this.getFileHandler();
-		if ('remove' in fileHandle && typeof fileHandle.remove === 'function') {
-			// eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
-			await fileHandle.remove();
+		try {
+			const dir = await this.getDirHandler();
+			return await dir.removeEntry(await this.getFileName());
+		} catch (err) {
+			if (err instanceof Error && err.name === 'NotFoundError') {
+				return;
+			}
+			/* c8 ignore next 2 */
+			throw err;
 		}
 	}
 
@@ -72,16 +81,22 @@ export class WebFsStorageDriver<Input> extends StorageDriver<Input, ArrayBuffer>
 		return true;
 	}
 
-	private async getFileHandler(): Promise<FileSystemFileHandle> {
-		if (typeof this.fileHandleLoadable === 'function') {
-			this.fileHandleLoadable = this.fileHandleLoadable();
+	private getDirHandler(): FileSystemDirectoryHandle | Promise<FileSystemDirectoryHandle> {
+		if (typeof this.dirHandleLoadable === 'function') {
+			this.dirHandleLoadable = this.dirHandleLoadable();
 		}
-		const fileHandle = await this.fileHandleLoadable;
-		const permission = await fileHandle.queryPermission({mode: 'readwrite'});
-		/* c8 ignore next 3 */
-		if (permission !== 'granted') {
-			throw new Error(`Permission denied: fileHandle permission is ${permission}`);
+		return this.dirHandleLoadable;
+	}
+
+	private getFileName(): string | Promise<string> {
+		if (typeof this.fileName === 'function') {
+			this.fileName = this.fileName();
 		}
-		return fileHandle;
+		return this.fileName;
+	}
+
+	private async getFileHandle(create: boolean): Promise<FileSystemFileHandle | Promise<FileSystemFileHandle>> {
+		const dir = await this.getDirHandler();
+		return dir.getFileHandle(await this.getFileName(), {create});
 	}
 }

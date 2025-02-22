@@ -1,9 +1,8 @@
+import {spy} from 'sinon';
 import {type IPersistSerializer, type IStorageDriver} from 'tachyon-drive';
-import {beforeAll, describe, expect, it} from 'vitest';
+import {beforeAll, beforeEach, describe, expect, it} from 'vitest';
 import {z} from 'zod';
-import {CacheStorageDriver, LocalStorageDriver, WebFsStorageDriver} from '../src/index.mjs';
-import {MockStorage} from './lib/MockStorage.mjs';
-import {MockupCacheStore} from './lib/mockupCache.mjs';
+import {CacheStorageDriver, CryptoBufferProcessor, LocalStorageDriver, WebFsStorageDriver} from '../src/index.mjs';
 
 const dataSchema = z.object({
 	test: z.string(),
@@ -12,14 +11,6 @@ const dataSchema = z.object({
 type Data = z.infer<typeof dataSchema>;
 
 const isBrowser = typeof window !== 'undefined';
-
-function getStorage(): Storage {
-	return isBrowser ? window.localStorage : new MockStorage();
-}
-
-function getCacheStorage(): CacheStorage {
-	return isBrowser ? window.caches : new MockupCacheStore();
-}
 
 const stringSerializer: IPersistSerializer<Data, string> = {
 	name: 'stringSerializer',
@@ -35,22 +26,40 @@ const arrayBufferSerializer: IPersistSerializer<Data, ArrayBuffer> = {
 	validator: (data: Data) => dataSchema.safeParse(data).success,
 };
 
-let fsDir: FileSystemDirectoryHandle;
-let fsStoreHandle: FileSystemFileHandle;
+const loadCryptoProcessor = spy(function () {
+	const processor = new CryptoBufferProcessor(() => new TextEncoder().encode('some-secret-key').buffer);
+	processor.setLogger(undefined);
+	return processor;
+});
 
-const driverSet = new Set<IStorageDriver<Data>>([
-	new LocalStorageDriver('LocalStorageDriver1', () => Promise.resolve('storageKey'), stringSerializer, undefined, undefined, getStorage()),
-	new LocalStorageDriver('LocalStorageDriver2', 'storageKey', stringSerializer, undefined, undefined, getStorage()),
-	new CacheStorageDriver(
-		'CacheStorageDriver1',
-		() => Promise.resolve({url: new URL('https://example.com/data')}),
-		arrayBufferSerializer,
-		undefined,
-		undefined,
-		getCacheStorage(),
-	),
-	new CacheStorageDriver('CacheStorageDriver2', {url: new URL('https://example.com/data')}, stringSerializer, undefined, undefined, getCacheStorage()),
-	new WebFsStorageDriver('WebFsStorageDriver', () => fsStoreHandle, arrayBufferSerializer),
+let fsDir: FileSystemDirectoryHandle;
+
+const driverSet = new Set<{driver: IStorageDriver<Data>; crypto?: boolean}>([
+	{driver: new LocalStorageDriver('LocalStorageDriver1', () => Promise.resolve('storageKey'), stringSerializer)},
+	{driver: new LocalStorageDriver('LocalStorageDriver2', 'storageKey', stringSerializer)},
+	{
+		driver: new CacheStorageDriver(
+			'CacheStorageDriver1',
+			() => Promise.resolve({url: new URL('https://example.com/data')}),
+			arrayBufferSerializer,
+			loadCryptoProcessor,
+		),
+		crypto: true,
+	},
+	{
+		driver: new CacheStorageDriver('CacheStorageDriver2', {url: new URL('https://example.com/data')}, stringSerializer),
+	},
+	{
+		driver: new CacheStorageDriver('CacheStorageDriver3', {url: new URL('https://example.com/data')}, stringSerializer),
+	},
+	{
+		driver: new WebFsStorageDriver(
+			'WebFsStorageDriver',
+			() => 'test.file',
+			() => fsDir,
+			arrayBufferSerializer,
+		),
+	},
 ]);
 
 const data = dataSchema.parse({test: 'demo'});
@@ -58,28 +67,32 @@ const data = dataSchema.parse({test: 'demo'});
 describe('StorageDriver', () => {
 	beforeAll(async () => {
 		fsDir = await navigator.storage.getDirectory();
-		fsStoreHandle = await fsDir.getFileHandle('store.data', {create: true});
-		expect(await fsStoreHandle.queryPermission({mode: 'readwrite'})).to.be.eq('granted');
 	});
-	driverSet.forEach((currentDriver) => {
+	driverSet.forEach(({driver: currentDriver, crypto}) => {
 		describe(currentDriver.name, () => {
+			beforeEach(function () {
+				loadCryptoProcessor.resetHistory();
+			});
 			beforeAll(async function () {
-				await currentDriver.init();
 				await currentDriver.clear();
 				expect(currentDriver.isInitialized).to.be.eq(false);
+				expect(loadCryptoProcessor.callCount).equals(0); // should not be loaded yet
 			});
 			it('should be empty store', async () => {
 				expect(await currentDriver.hydrate()).to.eq(undefined);
 				expect(currentDriver.isInitialized).to.be.eq(true);
+				expect(loadCryptoProcessor.callCount).equals(crypto ? 1 : 0);
 			});
 			it('should store to storage driver', async () => {
 				await currentDriver.store(data);
 				expect(await currentDriver.hydrate()).to.eql(data);
 				expect(currentDriver.isInitialized).to.be.eq(true);
+				expect(loadCryptoProcessor.callCount).equals(0); // crypto loads only once
 			});
 			it('should restore data from storage driver', async () => {
 				expect(await currentDriver.hydrate()).to.eql(data);
 				expect(currentDriver.isInitialized).to.be.eq(true);
+				expect(loadCryptoProcessor.callCount).equals(0); // crypto loads only once
 			});
 			it('should clear to storage driver', async () => {
 				await currentDriver.clear();

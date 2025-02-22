@@ -27,8 +27,8 @@ export class LocalStorageDriver<Input, Output extends string = string> extends S
 		name: string,
 		keyName: Loadable<string>,
 		serializer: IPersistSerializer<Input, Output>,
-		processor?: IStoreProcessor<Output>,
-		logger?: ILoggerLike | Console,
+		processor?: Loadable<IStoreProcessor<Output>>,
+		logger?: ILoggerLike,
 		localStorage?: Storage,
 	) {
 		super(name, serializer, null, processor, logger);

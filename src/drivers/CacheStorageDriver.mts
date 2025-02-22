@@ -34,7 +34,7 @@ export class CacheStorageDriver<Input, Output extends ArrayBuffer | string> exte
 		name: string,
 		options: Loadable<CacheStorageDriverOptions>,
 		serializer: IPersistSerializer<Input, Output>,
-		processor?: IStoreProcessor<Output>,
+		processor?: Loadable<IStoreProcessor<Output>>,
 		logger?: ILoggerLike,
 		caches?: CacheStorage,
 	) {

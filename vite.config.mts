@@ -13,16 +13,8 @@ export default defineConfig({
 			include: ['src/**/*.mts'],
 			reporter: ['text'],
 		},
-		browser: {
-			provider: 'playwright',
-			enabled: true,
-			headless: true,
-			instances: [
-				{
-					browser: 'chromium',
-				},
-			],
-		},
-		include: ['test/**/*.test.mts'],
+	},
+	optimizeDeps: {
+		include: ['tachyon-drive', 'sinon', 'zod'],
 	},
 });

@@ -3,8 +3,9 @@
 ## Browser CacheStorage and LocalStorage driver for [tachyon-drive](https://www.npmjs.com/package/tachyon-drive)
 
 ### Compatibility
- - Uses `CacheStorage` and `LocalStorage` Browser APIs.
- - Have peer dependencies on Browserify `events` packages (for StorageDriver `EventEmitter`).
+
+- Uses `CacheStorage` and `LocalStorage` Browser APIs.
+- Have peer dependencies on Browserify `events` packages (for StorageDriver `EventEmitter`).
 
 ### CacheStorageDriver and LocalStorageDriver examples
 
@@ -28,6 +29,11 @@ export const localStoreDriver = new LocalStorageDriver('LocalStorageDriver', 'ta
 // cache storage driver can handle string and array buffer values.
 export const cacheStoreDriver = new CacheStorageDriver('CacheStorageDriver', {url: new URL('http://tachyon')}, stringSerializer, undefined, console);
 export const cacheStoreDriver = new CacheStorageDriver('CacheStorageDriver', {url: new URL('http://tachyon')}, arrayBufferSerializer, undefined, console);
+// WebFS Api driver
+export const webFsStoreDrivere= new WebFsStorageDriver('WebFsStorageDriver', () => fsStoreHandle, arrayBufferSerializer);
+// encrypted cache storage (ArrayBuffer)
+const processor = new CryptoBufferProcessor(() => new TextEncoder().encode('some-secret-key'));
+export const cacheStoreDriver = new CacheStorageDriver('CacheStorageDriver', {url: new URL('http://tachyon')}, arrayBufferSerializer, processor, console);
 ```
 
 ### see more on NPMJS [tachyon-drive](https://www.npmjs.com/package/tachyon-drive)
