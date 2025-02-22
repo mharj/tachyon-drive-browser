@@ -30,10 +30,11 @@ export const localStoreDriver = new LocalStorageDriver('LocalStorageDriver', 'ta
 export const cacheStoreDriver = new CacheStorageDriver('CacheStorageDriver', {url: new URL('http://tachyon')}, stringSerializer, undefined, console);
 export const cacheStoreDriver = new CacheStorageDriver('CacheStorageDriver', {url: new URL('http://tachyon')}, arrayBufferSerializer, undefined, console);
 // WebFS Api driver
-export const webFsStoreDrivere= new WebFsStorageDriver('WebFsStorageDriver', () => fsStoreHandle, arrayBufferSerializer);
+export const webFsStoreDriver = new WebFsStorageDriver('WebFsStorageDriver', 'store.json', () => navigator.storage.getDirectory(), arrayBufferSerializer);
 // encrypted cache storage (ArrayBuffer)
 const processor = new CryptoBufferProcessor(() => new TextEncoder().encode('some-secret-key'));
 export const cacheStoreDriver = new CacheStorageDriver('CacheStorageDriver', {url: new URL('http://tachyon')}, arrayBufferSerializer, processor, console);
+export const webFsStoreDriver = new WebFsStorageDriver('WebFsStorageDriver', 'store.aes', () => navigator.storage.getDirectory(), arrayBufferSerializer, processor, console);
 ```
 
 ### see more on NPMJS [tachyon-drive](https://www.npmjs.com/package/tachyon-drive)

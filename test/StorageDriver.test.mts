@@ -32,8 +32,6 @@ const loadCryptoProcessor = spy(function () {
 	return processor;
 });
 
-let fsDir: FileSystemDirectoryHandle;
-
 const driverSet = new Set<{driver: IStorageDriver<Data>; crypto?: boolean}>([
 	{driver: new LocalStorageDriver('LocalStorageDriver1', () => Promise.resolve('storageKey'), stringSerializer)},
 	{driver: new LocalStorageDriver('LocalStorageDriver2', 'storageKey', stringSerializer)},
@@ -56,7 +54,7 @@ const driverSet = new Set<{driver: IStorageDriver<Data>; crypto?: boolean}>([
 		driver: new WebFsStorageDriver(
 			'WebFsStorageDriver',
 			() => 'test.file',
-			() => fsDir,
+			() => navigator.storage.getDirectory(),
 			arrayBufferSerializer,
 		),
 	},
@@ -65,9 +63,6 @@ const driverSet = new Set<{driver: IStorageDriver<Data>; crypto?: boolean}>([
 const data = dataSchema.parse({test: 'demo'});
 
 describe('StorageDriver', () => {
-	beforeAll(async () => {
-		fsDir = await navigator.storage.getDirectory();
-	});
 	driverSet.forEach(({driver: currentDriver, crypto}) => {
 		describe(currentDriver.name, () => {
 			beforeEach(function () {
