@@ -5,6 +5,11 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  actions: read
+  checks: write
+
 env:
   # Setting an environment variable with the value of a configuration variable
   CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
@@ -55,13 +60,21 @@ jobs:
         if: env.HAVE_VALIDATE_SCRIPT == 'true'
         run: ${{ env.NPM }} run validate
 
+      - name: Run linter checks
+        if: env.HAVE_LINT_SCRIPT == 'true'
+        run: ${{ env.NPM }} run lint
+
       - name: Run unit tests
         if: env.HAVE_UNIT_TEST_SCRIPT == 'true'
         run: ${{ env.NPM }} test
 
-      - name: Run linter checks
-        if: env.HAVE_LINT_SCRIPT == 'true'
-        run: ${{ env.NPM }} run lint
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: Unit Tests
+          path: test-results.xml
+          reporter: java-junit
 
       - name: Run and publish code coverage
         if: |

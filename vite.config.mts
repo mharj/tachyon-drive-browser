@@ -6,7 +6,7 @@ export default defineConfig({
 	test: {
 		reporters: process.env.GITHUB_ACTIONS ? ['github-actions', 'junit'] : ['verbose', 'github-actions', 'junit'],
 		outputFile: {
-			junit: './reports/jest-results.xml',
+			junit: './test-results.xml',
 		},
 		coverage: {
 			provider: 'v8',
