@@ -61,7 +61,7 @@ export class LocalStorageDriver<Input, Output extends string = string> extends S
 		if (data) {
 			this.logger.debug(`${this.name}: Read ${data.length.toString()} bytes from LocalStorage`);
 		}
-		return data || undefined;
+		return data ?? undefined;
 	}
 
 	protected async handleClear(): Promise<void> {

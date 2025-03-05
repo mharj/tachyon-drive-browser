@@ -128,7 +128,7 @@ export class CacheStorageDriver<Input, Output extends ArrayBuffer | string> exte
 	private async getCurrentCache(): Promise<Cache> {
 		if (!this.currentCache) {
 			const options = await this.getOptions();
-			const cacheName = options.cacheName || 'tachyon';
+			const cacheName = options.cacheName ?? 'tachyon';
 			this.currentCache = await this.caches.open(cacheName);
 			this.logger.debug(`${this.name}: Opened cache '${cacheName}'`);
 		}
